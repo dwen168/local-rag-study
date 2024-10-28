@@ -2,6 +2,7 @@ import streamlit as st
 import os
 
 from langchain_community.llms import Ollama
+from langchain_core.documents import Document
 from document_loader import load_documents_into_database
 
 from models import get_list_of_models
@@ -10,7 +11,7 @@ from llm import getStreamingChain
 
 
 EMBEDDING_MODEL = "nomic-embed-text"
-PATH = "Research"
+UPLOAD_DIR = "uploaded_files"
 
 
 st.title("Local LLM with RAG 📚")
@@ -27,11 +28,33 @@ if st.session_state.get("ollama_model") != selected_model:
     st.session_state["llm"] = Ollama(model=selected_model)
 
 
-# Folder selection
-folder_path = st.sidebar.text_input("Enter the folder path:", PATH)
+# Ensure the directory exists, create it if it doesn't
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
 
-if folder_path:
-    if not os.path.isdir(folder_path):
+# File uploader to allow multiple files
+uploaded_files = st.file_uploader("Choose files", type=None, accept_multiple_files=True)
+
+# Check if files were uploaded
+if uploaded_files:
+    for uploaded_file in uploaded_files:
+        # Display basic file information
+        st.write(f"**Filename:** {uploaded_file.name}")
+        st.write(f"**File size:** {uploaded_file.size / 1024:.2f} KB")
+        st.write(f"**File type:** {uploaded_file.type}")
+
+        # Create the full file path
+        file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+
+        # Save the uploaded file to the specified directory
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        st.success(f"Saved file: {uploaded_file.name} to {UPLOAD_DIR}")
+
+
+if UPLOAD_DIR:
+    if not os.path.isdir(UPLOAD_DIR):
         st.error(
             "The provided path is not a valid directory. Please enter a valid folder path."
         )
@@ -42,11 +65,12 @@ if folder_path:
                     "Creating embeddings and loading documents into Chroma..."
                 ):
                     st.session_state["db"] = load_documents_into_database(
-                        EMBEDDING_MODEL, folder_path
+                        EMBEDDING_MODEL, UPLOAD_DIR
                     )
                 st.info("All set to answer questions!")
 else:
     st.warning("Please enter a folder path to load documents into the database.")
+
 
 # Initialize chat history
 if "messages" not in st.session_state:

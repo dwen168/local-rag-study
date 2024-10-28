@@ -9,8 +9,10 @@ from langchain_core.documents import Document
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+import shutil
 
-TEXT_SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+#TEXT_SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+CHROMA_PATH = "chroma"
 
 
 def load_documents_into_database(model_name: str, documents_path: str) -> Chroma:
@@ -22,15 +24,41 @@ def load_documents_into_database(model_name: str, documents_path: str) -> Chroma
         Chroma: The Chroma database with loaded documents.
     """
 
-    print("Loading documents")
-    raw_documents = load_documents(documents_path)
-    documents = TEXT_SPLITTER.split_documents(raw_documents)
-
     print("Creating embeddings and loading documents into Chroma")
-    db = Chroma.from_documents(
-        documents,
-        OllamaEmbeddings(model=model_name),
-    )
+    #clear_database()
+    db = Chroma(
+            persist_directory=CHROMA_PATH, embedding_function=get_embedding_function()
+        )
+
+    print("Loading documents")
+    #read raw doc file path
+    raw_documents = load_documents(documents_path)
+
+    #split into chunks by text_splitter
+    chunks = split_documents(raw_documents)
+
+    # Calculate Page IDs.
+    chunks_with_ids = calculate_chunk_ids(chunks)
+
+    # Add or Update the documents.
+    existing_items = db.get(include=[])  # IDs are always included by default
+    existing_ids = set(existing_items["ids"])
+    print(f"Number of existing documents in DB: {len(existing_ids)}")
+
+    # Only add documents that don't exist in the DB.
+    new_chunks = []
+    for chunk in chunks_with_ids:
+        if chunk.metadata["id"] not in existing_ids:
+            new_chunks.append(chunk)
+
+    if len(new_chunks):
+        print(f"👉 Adding new documents: {len(new_chunks)}")
+        new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
+        db.add_documents(new_chunks, ids=new_chunk_ids)
+        #db.persist()
+    else:
+        print("✅ No new documents to add")
+
     return db
 
 
@@ -51,6 +79,12 @@ def load_documents(path: str) -> List[Document]:
 
     Raises:
         FileNotFoundError: If the specified path does not exist.
+
+    Return: Document Objs
+            page_content = 'ABCD'
+            metadata={'source': 'Research\\2305.14325.pdf', 'page': 0}
+
+    Note: this is before split into chunks        
     """
     if not os.path.exists(path):
         raise FileNotFoundError(f"The specified path does not exist: {path}")
@@ -69,6 +103,12 @@ def load_documents(path: str) -> List[Document]:
             loader_cls=TextLoader,
             show_progress=True,
         ),
+        ".txt": DirectoryLoader(
+            path,
+            glob="**/*.txt",
+            loader_cls=TextLoader,
+            show_progress=True,
+        ),
     }
 
     docs = []
@@ -76,3 +116,55 @@ def load_documents(path: str) -> List[Document]:
         print(f"Loading {file_type} files")
         docs.extend(loader.load())
     return docs
+
+
+def get_embedding_function():
+    #embeddings = BedrockEmbeddings(
+        #credentials_profile_name="default", region_name="us-east-1"
+    #)
+    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    return embeddings
+
+
+def split_documents(documents: list[Document]):
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=100,
+        length_function=len,
+        is_separator_regex=False,
+    )
+    return text_splitter.split_documents(documents)
+
+
+def calculate_chunk_ids(chunks):
+
+    # This will create IDs like "data/doc_name.pdf:7:2"
+    # Page Source : Page Number : Chunk Index
+
+    last_page_id = None
+    current_chunk_index = 0
+
+    for chunk in chunks:
+        source = chunk.metadata.get("source")
+        page = chunk.metadata.get("page")
+        current_page_id = f"{source}:{page}"
+
+        # If the page ID is the same as the last one, increment the index.
+        if current_page_id == last_page_id:
+            current_chunk_index += 1
+        else:
+            current_chunk_index = 0
+
+        # Calculate the chunk ID.
+        chunk_id = f"{current_page_id}:{current_chunk_index}"
+        last_page_id = current_page_id
+
+        # Add it to the page meta-data.
+        chunk.metadata["id"] = chunk_id
+
+    return chunks
+
+
+def clear_database():
+    if os.path.exists(CHROMA_PATH):
+        shutil.rmtree(CHROMA_PATH)
