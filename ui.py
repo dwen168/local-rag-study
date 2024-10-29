@@ -9,6 +9,8 @@ from models import get_list_of_models
 
 from llm import getStreamingChain
 
+from query_rag import query_rag
+
 
 EMBEDDING_MODEL = "nomic-embed-text"
 UPLOAD_DIR = "uploaded_files"
@@ -74,25 +76,37 @@ else:
 
 
 # Initialize chat history
-if "messages" not in st.session_state:
+if 'messages' not in st.session_state:
     st.session_state.messages = []
 
-# Display chat messages from history on app rerun
+# Display chat history
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    st.write(f"**{message['role']}:** {message['content']}")
 
-if prompt := st.chat_input("Question"):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
 
-    with st.chat_message("assistant"):
-        stream = getStreamingChain(
-            prompt,
-            st.session_state.messages,
-            st.session_state["llm"],
-            st.session_state["db"],
-        )
-        response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+user_input = st.text_input("You:", "")
+
+if st.button("Send") and user_input:
+    # Append user message to the session state
+    st.session_state.messages.append({"role": "User", "content": user_input})
+
+    # Query the RAG model
+    #response = qa_chain.run(user_input)
+    response = query_rag(  user_input, 
+                                    st.session_state["db"], 
+                                    st.session_state["ollama_model"])
+    print("back to UI................................................................")
+    print(response)
+
+    # Append AI response to the session state
+    st.session_state.messages.append({"role": "AI", "content": response})
+    st.write(f"**AI:** {response}")
+
+    # Clear the input field
+    user_input = ""
+
+# Optionally, you can add an info message if no input is given
+if not user_input:
+    st.info("Please enter your message above and click 'Send'.")
+    
+
