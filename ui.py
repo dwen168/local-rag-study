@@ -64,10 +64,11 @@ if UPLOAD_DIR:
                 with st.spinner(
                     "Creating embeddings and loading documents into Chroma..."
                 ):
-                    st.session_state["db"] = load_documents_into_database(
-                        EMBEDDING_MODEL, UPLOAD_DIR
-                    )
+                    st.session_state["db"] = load_documents_into_database(EMBEDDING_MODEL, UPLOAD_DIR)
                 st.info("All set to answer questions!")
+            st.info("Connecting to Chroma....")
+            st.session_state["db"] = load_documents_into_database(EMBEDDING_MODEL, UPLOAD_DIR)
+            st.info("All set to answer questions!")
 else:
     st.warning("Please enter a folder path to load documents into the database.")
 

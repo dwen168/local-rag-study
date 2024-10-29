@@ -13,6 +13,8 @@ import shutil
 
 #TEXT_SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
 CHROMA_PATH = "chroma"
+WORKING_PATH = "uploaded_files"
+ARCHIVE_PATH = "archive"
 
 
 def load_documents_into_database(model_name: str, documents_path: str) -> Chroma:
@@ -58,6 +60,8 @@ def load_documents_into_database(model_name: str, documents_path: str) -> Chroma
         #db.persist()
     else:
         print("✅ No new documents to add")
+
+    archive_files(WORKING_PATH, ARCHIVE_PATH)
 
     return db
 
@@ -168,3 +172,40 @@ def calculate_chunk_ids(chunks):
 def clear_database():
     if os.path.exists(CHROMA_PATH):
         shutil.rmtree(CHROMA_PATH)
+
+
+def archive_files(source_dir, dest_dir):
+    """
+    Moves all files from the source directory to the destination directory.
+
+    Parameters:
+    - source_dir (str): Path to the source directory.
+    - dest_dir (str): Path to the destination directory.
+
+    Returns:
+    - None
+    """
+    # Ensure the source directory exists
+    if not os.path.exists(source_dir):
+        print(f"Source directory '{source_dir}' does not exist.")
+        return
+
+    # Ensure the destination directory exists; if not, create it
+    if not os.path.exists(dest_dir):
+        os.makedirs(dest_dir)
+        print(f"Destination directory '{dest_dir}' created.")
+
+    # Move all files from source_dir to dest_dir
+    for filename in os.listdir(source_dir):
+        source_path = os.path.join(source_dir, filename)
+        dest_path = os.path.join(dest_dir, filename)
+        
+        # Check if it's a file (skip directories)
+        if os.path.isfile(source_path):
+            shutil.move(source_path, dest_path)
+            print(f"Archived: {filename}")
+        else:
+            print(f"Skipped directory: {filename}")
+
+    print("File archive completed.")
+
