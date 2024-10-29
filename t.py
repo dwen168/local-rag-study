@@ -1,104 +1,88 @@
 import streamlit as st
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+import chromadb
+import numpy as np
+import torch
 
-import streamlit as st
-from langchain_core.documents import Document
-from langchain_community.document_loaders import (
-    DirectoryLoader,
-    PyPDFLoader,
-    TextLoader,
-)
-from typing import List
-import os
-from typing import List
-from langchain_core.documents import Document
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-import shutil
-from langchain_community.llms.ollama import Ollama
+# Initialize ChromaDB client
+chroma_client = chromadb.Client()
 
+# Load the tokenizer and model
+tokenizer = AutoTokenizer.from_pretrained("deepset/roberta-base-squad2")
+model = AutoModelForQuestionAnswering.from_pretrained("deepset/roberta-base-squad2")
 
-from langchain.vectorstores.chroma import Chroma
-from langchain.prompts import ChatPromptTemplate
-from langchain_community.llms.ollama import Ollama
+# Sample documents for RAG
+documents = [
+    "The sky is blue and beautiful.",
+    "Python is a programming language.",
+    "Streamlit is a framework for building web apps.",
+    "Machine learning is a subset of artificial intelligence."
+]
 
+# Create embeddings for documents
+def create_embeddings(docs):
+    inputs = tokenizer(docs, padding=True, truncation=True, return_tensors="pt")
+    with torch.no_grad():
+        outputs = model(**inputs)
+    return outputs.start_logits.softmax(dim=-1).numpy()
 
-PROMPT_TEMPLATE = """
-Answer the question based only on the following context:
+# Store documents in ChromaDB
+def store_documents(docs):
+    embeddings = create_embeddings(docs)
+    for doc, embedding in zip(docs, embeddings):
+        chroma_client.add(documents=[doc], embeddings=[embedding.tolist()])
 
-{context}
+store_documents(documents)
 
----
+# Define the confidence threshold for fallback
+CONFIDENCE_THRESHOLD = 0.7  # You can adjust this value
 
-Answer the question based on the above context: {question}
-"""
-
-
-def retrieve_from_db(query_text: str, db, k=5):
-    """Retrieves the most similar documents from the Chroma DB."""
-    try:
-        # Search the database with similarity score
-        results = db.similarity_search_with_score(query_text, k=k)
-        if not results:
-            raise ValueError("No relevant documents found in the database.")
-        return results
-    except Exception as e:
-        print(f"Error retrieving from DB: {e}")
-        return None
-
-def create_prompt(query_text: str, context_text: str):
-    """Formats the prompt for the LLM using the retrieved context and query."""
-    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    prompt = prompt_template.format(context=context_text, question=query_text)
-    return prompt
-
-def query_ollama_model(prompt: str, model_name="mistral"):
-    """Queries the Ollama model and returns the response."""
-    try:
-        model = Ollama(model=model_name)
-        response_text = model.invoke(prompt)
-        return response_text
-    except Exception as e:
-        print(f"Error invoking Ollama model: {e}")
-        return None
-
-def format_response(response_text: str, sources: list):
-    """Formats the final response with the answer and the sources."""
-    return f"Response: {response_text}\nSources: {sources}"
-
-def query_rag(query_text: str):
-    # Step 1: Initialize database
-    db = setup_db()
-
-    # Step 2: Retrieve relevant documents
-    results = retrieve_from_db(query_text, db)
+# Define a function for retrieval and response generation with fallback
+def get_response(query):
+    query_embedding = create_embeddings([query])
+    results = chroma_client.query(query_embedding.tolist(), n_results=1)  # Retrieve the top document
+    retrieved_doc = results[0][0]  # Get the top result document
     
-    if results:
-        # Step 3: Prepare the context from the retrieved documents
-        context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-        # Step 4: Create the prompt for Ollama
-        prompt = create_prompt(query_text, context_text)
-        
-        # Step 5: Query Ollama with the prompt
-        response_text = query_ollama_model(prompt)
-        
-        # Step 6: Extract document sources
-        sources = [doc.metadata.get("id", None) for doc, _score in results]
-        
-        # Step 7: Format and return the response
-        formatted_response = format_response(response_text, sources)
-        print(formatted_response)
-        return response_text
-    else:
-        # Fallback: If no documents were found, query Ollama directly without context
-        print("No relevant documents found in the DB, querying Ollama directly...")
-        response_text = query_ollama_model(query_text)
-        formatted_response = format_response(response_text, [])
-        print(formatted_response)
-        return response_text
+    # Generate an answer based on the retrieved document
+    inputs = tokenizer(retrieved_doc, return_tensors="pt")
+    outputs = model(**inputs)
+    
+    start_logits = outputs.start_logits.softmax(dim=-1).numpy()[0]
+    answer_start = np.argmax(start_logits)
+    answer_confidence = start_logits[answer_start]
 
+    # Generate answer based on start position
+    answer_tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0][answer_start:answer_start + 5])
+    answer_text = tokenizer.decode(inputs["input_ids"][0][answer_start:answer_start + 5], skip_special_tokens=True)
 
-query_text = "where is Sydney, Australia located?"
-response_text = query_ollama_model(query_text)
+    # Implement corrective fallback
+    if answer_confidence < CONFIDENCE_THRESHOLD:
+        fallback_responses = [
+            "I'm not sure about that. Can you ask something else?",
+            "I need to gather more information. Please rephrase your question.",
+            "Let's try a different question."
+        ]
+        answer_text = np.random.choice(fallback_responses)
 
-print(response_text)
+    return retrieved_doc, answer_text
+
+# Streamlit app
+st.title("RAG Chatbot with Corrective Fallback and ChromaDB")
+
+# Initialize session state for chat history
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+
+# Display chat history
+for user_message, bot_response in st.session_state.chat_history:
+    st.write(f"**You:** {user_message}")
+    st.write(f"**Bot:** {bot_response}")
+
+# Input for user message
+user_input = st.text_input("Ask me anything:")
+if user_input:
+    retrieved_doc, answer = get_response(user_input)
+    st.session_state.chat_history.append((user_input, answer))  # Update chat history
+    st.write(f"**Retrieved Document:** {retrieved_doc}")
+    st.write(f"**Bot:** {answer}")
+
