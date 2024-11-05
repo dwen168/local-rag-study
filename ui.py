@@ -81,32 +81,20 @@ if 'messages' not in st.session_state:
 
 # Display chat history
 for message in st.session_state.messages:
-    st.write(f"**{message['role']}:** {message['content']}")
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
 
-user_input = st.text_input("You:", "")
+if prompt := st.chat_input("Question"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-if st.button("Send") and user_input:
-    # Append user message to the session state
-    st.session_state.messages.append({"role": "User", "content": user_input})
-
-    # Query the RAG model
-    #response = qa_chain.run(user_input)
-    response = query_rag(  user_input, 
-                                    st.session_state["db"], 
-                                    st.session_state["ollama_model"])
-    print("back to UI................................................................")
-    print(response)
-
-    # Append AI response to the session state
-    st.session_state.messages.append({"role": "AI", "content": response})
-    st.write(f"**AI:** {response}")
-
-    # Clear the input field
-    user_input = ""
-
-# Optionally, you can add an info message if no input is given
-if not user_input:
-    st.info("Please enter your message above and click 'Send'.")
-    
-
+    with st.chat_message("assistant"):
+        stream = query_rag(
+            prompt,
+            st.session_state["db"],
+            st.session_state["ollama_model"],
+        )
+        st.session_state.messages.append({"role": "assistant", "content": stream})
+        st.write(stream)

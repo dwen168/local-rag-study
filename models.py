@@ -39,7 +39,9 @@ def get_list_of_models() -> list[str]:
     Returns:
         list[str]: A list of model names available in the Ollama repository.
     """
-    return [model["name"] for model in ollama.list()["models"]]
+    all_models =  [model["name"] for model in ollama.list()["models"]]
+    my_list_models = [item for item in all_models if item != "nomic-embed-text:latest"]
+    return my_list_models
 
 
 
