@@ -41,6 +41,8 @@ def get_list_of_models() -> list[str]:
     """
     all_models =  [model["name"] for model in ollama.list()["models"]]
     my_list_models = [item for item in all_models if item != "nomic-embed-text:latest"]
+    #add gpt api
+    my_list_models.append("gpt-4o-mini")
     return my_list_models
 
 
