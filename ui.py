@@ -56,15 +56,17 @@ if UPLOAD_DIR:
             "The provided path is not a valid directory. Please enter a valid folder path."
         )
     else:
-        if st.sidebar.button("Index Documents"):
+        st.sidebar.text(f"The embedding model is : \n{EMBEDDING_MODEL}")
+        if st.sidebar.button("Load and Index Documents"):
             if "db" not in st.session_state:
                 with st.spinner(
                     "Creating embeddings and loading documents into Chroma..."
                 ):
                     st.session_state["db"] = load_documents_into_database(EMBEDDING_MODEL, UPLOAD_DIR)
                 st.info("All set to answer questions!")
-            st.info("Connecting to Chroma....")
-            st.session_state["db"] = load_documents_into_database(EMBEDDING_MODEL, UPLOAD_DIR)
+            else:
+                st.info("Connecting to Chroma....")
+                st.session_state["db"] = load_documents_into_database(EMBEDDING_MODEL, UPLOAD_DIR)
             st.info("All set to answer questions!")
 else:
     st.warning("Please enter a folder path to load documents into the database.")

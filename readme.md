@@ -1,27 +1,13 @@
 
-#Copy of https://github.com/amscotti/local-LLM-with-RAG/tree/main
-#study purpose, not the owner
-
+#This is the extention of https://github.com/amscotti/local-LLM-with-RAG/tree/main
 
 
 # Local LLM with RAG
 
 
-
-
-<p align="center">
-    <img src="images/wizard_experimenting.jpg" alt="A wizard experimenting - Leonardo AI" width="600">
-</p>
-
-This project is an experimental sandbox for testing out ideas related to running local Large Language Models (LLMs) with [Ollama](https://ollama.ai/) to perform Retrieval-Augmented Generation (RAG) for answering questions based on sample PDFs. In this project, we are also using Ollama to create embeddings with the [nomic-embed-text](https://ollama.com/library/nomic-embed-text) to use with [Chroma](https://docs.trychroma.com/). Please note that the embeddings are reloaded each time the application runs, which is not efficient and is only done here for testing purposes.
-
-[![asciicast](https://asciinema.org/a/fepTvXf1UiDpRUhhNiswL8isu.svg)](https://asciinema.org/a/fepTvXf1UiDpRUhhNiswL8isu)
+This project is an experimental sandbox for testing out ideas related to running local Large Language Models (LLMs) with [Ollama](https://ollama.ai/) to perform Retrieval-Augmented Generation (RAG) for answering questions based on sample PDFs and Texts. In this project, we are also using Ollama to create embeddings with the [nomic-embed-text](https://ollama.com/library/nomic-embed-text) to use with [Chroma](https://docs.trychroma.com/). 
 
 There is also a web UI created using [Streamlit](https://streamlit.io/) to provide a different way to interact with Ollama.
-
-<p align="center">
-    <img src="images/streamlit_ui.png" alt="Screenshot of Streamlit web UI" width="600">
-</p>
 
 ## Requirements
 
@@ -39,10 +25,7 @@ There is also a web UI created using [Streamlit](https://streamlit.io/) to provi
 **Note:** The first time you run the project, it will download the necessary models from Ollama for the LLM and embeddings. This is a one-time setup process and may take some time depending on your internet connection.
 
 1. Ensure your virtual environment is activated.
-2. Run the main script with `python app.py -m <model_name> -p <path_to_documents>` to specify a model and the path to documents. If no model is specified, it defaults to [mistral](https://ollama.com/library/mistral). If no path is specified, it defaults to `Research` located in the repository for example purposes.
-3. Optionally, you can specify the embedding model to use with `-e <embedding_model_name>`. If not specified, it defaults to [nomic-embed-text](https://ollama.com/library/nomic-embed-text).
 
-This will load the PDFs and Markdown files, generate embeddings, query the collection, and answer the question defined in `app.py`.
 
 ## Running the Streamlit UI
 
@@ -59,3 +42,19 @@ This will start a local web server and open a new tab in your default web browse
 - [Chroma](https://docs.trychroma.com/): A vector database for storing and retrieving embeddings.
 - [PyPDF](https://pypi.org/project/PyPDF2/): A Python library for reading and manipulating PDF files.
 - [Streamlit](https://streamlit.io/): A web framework for creating interactive applications for machine learning and data science projects.
+
+
+## Project Files
+1. ui.py: This is the main Streamlit app. Launch the app by running streamlit run ui.py in the terminal.
+
+    Model Selection: Choose an existing model from a dropdown box. This automatically loads a model from Ollama, as well as the GPT-4-turbo-mini (gpt-4o-mini) model from OpenAI (requires your API key).
+    Document Upload: Upload PDF or TXT documents through the UI. These documents are then embedded into your local Chroma database.
+    Load and Index: Click "Load and Index Document" to save the document into your local Chroma DB.
+
+2. models.py: Detects the available local models through Ollama.
+
+3. document_loader.py: Handles document uploads, splitting, embedding, and loading into the Chroma database. It archives files in the archive folder and automatically detects and skips duplicate uploads.
+
+4. query_rag.py: Provides a querying interface for the Chroma DB. If a relevant answer is found in the knowledge base, it generates a response based on local data. If not, it queries models from Ollama or ChatGPT.
+
+5. query_router.py, query_ollama.py, and query_gpt.py: These files support the querying functionality described in point 4.
