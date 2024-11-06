@@ -2,13 +2,8 @@ import streamlit as st
 import os
 
 from langchain_community.llms import Ollama
-from langchain_core.documents import Document
 from document_loader import load_documents_into_database
-
 from models import get_list_of_models
-
-from llm import getStreamingChain
-
 from query_rag import query_rag
 
 
@@ -25,8 +20,8 @@ selected_model = st.sidebar.selectbox(
     "Select a model:", st.session_state["list_of_models"]
 )
 
-if st.session_state.get("ollama_model") != selected_model:
-    st.session_state["ollama_model"] = selected_model
+if st.session_state.get("selected_model") != selected_model:
+    st.session_state["selected_model"] = selected_model
     st.session_state["llm"] = Ollama(model=selected_model)
 
 
@@ -94,7 +89,7 @@ if prompt := st.chat_input("Question"):
         stream = query_rag(
             prompt,
             st.session_state["db"],
-            st.session_state["ollama_model"],
+            st.session_state["selected_model"],
         )
         st.session_state.messages.append({"role": "assistant", "content": stream})
         st.write(stream)
