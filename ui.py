@@ -11,13 +11,13 @@ EMBEDDING_MODEL = "nomic-embed-text"
 UPLOAD_DIR = "uploaded_files"
 
 
-st.title("Local LLM with RAG 📚")
+st.title("Build your own RAG 📚")
 
 if "list_of_models" not in st.session_state:
     st.session_state["list_of_models"] = get_list_of_models()
 
 selected_model = st.sidebar.selectbox(
-    "Select a model:", st.session_state["list_of_models"]
+    "Select a LLM model:", st.session_state["list_of_models"]
 )
 
 if st.session_state.get("selected_model") != selected_model:
@@ -88,10 +88,13 @@ if prompt := st.chat_input("Question"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        stream = query_rag(
-            prompt,
-            st.session_state["db"],
-            st.session_state["selected_model"],
-        )
-        st.session_state.messages.append({"role": "assistant", "content": stream})
-        st.write(stream)
+        if "db" not in st.session_state:
+            st.write("please select a LLM model and index it first")
+        else:
+            stream = query_rag(
+                prompt,
+                st.session_state["db"],
+                st.session_state["selected_model"],
+            )
+            st.session_state.messages.append({"role": "assistant", "content": stream})
+            st.write(stream)

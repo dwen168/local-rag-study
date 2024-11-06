@@ -63,11 +63,12 @@ def query_rag(query_text: str, db, selected_model):
         return formatted_response
     else:
         # Fallback: If no documents were found, query Ollama directly without context
-        print("No relevant documents found in the DB, querying Ollama directly...")
         response_text = ''
         if selected_model != "gpt-4o-mini":
+            print("No relevant documents found in the DB, querying Ollama directly...")
             response_text = query_ollama_model(query_text, selected_model)
         else:
+            print("No relevant documents found in the DB, querying OpenAI directly...")
             response_text = query_gpt_model(selected_model, query_text)
         formatted_response = f"No knowledge was found in local vector database, there is the response from {selected_model} \n\n {response_text}"
         #print(formatted_response)

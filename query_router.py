@@ -41,7 +41,7 @@ def ollama_router(selected_model, human_content):
             [SystemMessage(content=DOC_GRADER_INSTRUCTIONS)]
                 + [HumanMessage(content=human_content)]
         )
-    print("routering....")
+    print(f"routering....{selected_model}")
     print(result.strip())
     result = json.loads(result.strip())
     return result
@@ -56,6 +56,7 @@ def gpt_router(selected_model, human_content):
             ],
             max_tokens=1000,  # Adjust max_tokens as needed
         )
-    print("routering...api")
+    print(f"routering....{selected_model}")
     result =  json.loads(response.choices[0].message.content.strip())
+    print(result)
     return result
