@@ -12,7 +12,7 @@ Answer the question based only on the following context:
 Answer the question based on the above context: {question}
 
 If the question is about to generate a mind map of the context, return markdown formatted answer as the input for mind map software.
-The markdown formatted answer should be always start with Mind Map
+The markdown-formatted answer should always begin with Mind Map.
 
 If the question is about something else, just reply with the knowledge you have.
 """
