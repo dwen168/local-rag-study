@@ -1,10 +1,12 @@
 import streamlit as st
 import os
+import streamlit.components.v1 as components
 
 from langchain_community.llms import Ollama
 from document_loader import load_documents_into_database
 from models import get_list_of_models
 from query_rag import query_rag
+from markmapcomponent import create_markmap_html, get_binary_file_downloader_html, escape_markdown_for_js
 
 
 EMBEDDING_MODEL = "nomic-embed-text"
@@ -98,3 +100,9 @@ if prompt := st.chat_input("Question"):
             )
             st.session_state.messages.append({"role": "assistant", "content": stream})
             st.write(stream)
+            if "Mind Map" in stream:
+                st.subheader("Generated Mind Map")
+                html_content = create_markmap_html(stream)
+                components.html(html_content, height=400)
+                # Add button to open in new tab
+                st.markdown(get_binary_file_downloader_html(html_content), unsafe_allow_html=True)
