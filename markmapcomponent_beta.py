@@ -1,8 +1,5 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import json
-from pathlib import Path
-import tempfile
 import base64
 
 def escape_markdown_for_js(markdown_text):
