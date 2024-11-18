@@ -93,16 +93,28 @@ if prompt := st.chat_input("Question"):
         if "db" not in st.session_state:
             st.write("please select a LLM model and index it first")
         else:
-            stream = query_rag(
+            response = query_rag(
                 prompt,
                 st.session_state["db"],
                 st.session_state["selected_model"],
             )
+            if "mind_map_mark" in response.lower():
+                stream = response[response.find("mind_map_mark") + len("mind_map_mark"):].strip()
+            else:
+                stream = response
             st.session_state.messages.append({"role": "assistant", "content": stream})
             st.write(stream)
-            if "Mind Map" in stream:
+            if ("mind map" in response.lower() and "mind map" in prompt.lower()) or "mind_map_mark" in response.lower():
+                start_index = stream.find("#")
+                end_index = stream.find("Sources: [", start_index)
+                if start_index > -1 and end_index > -1:
+                    str_mindmap = stream[start_index : end_index].strip()
+                elif start_index > -1 and end_index == -1:
+                    str_mindmap = stream[start_index :]
+                else:
+                    str_mindmap = stream
                 st.subheader("Generated Mind Map")
-                html_content = create_markmap_html(stream)
+                html_content = create_markmap_html(str_mindmap)
                 components.html(html_content, height=400)
                 # Add button to open in new tab
                 st.markdown(get_binary_file_downloader_html(html_content), unsafe_allow_html=True)

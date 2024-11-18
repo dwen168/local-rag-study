@@ -2,8 +2,9 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 from query_router import ollama_router, gpt_router, doc_grader_prompt_formatted
-from query_ollama import query_ollama_model, create_prompt
+from query_ollama import query_ollama_model
 from query_gpt import query_gpt_model
+from create_prompts import create_prompt
 
 
 load_dotenv()
@@ -14,7 +15,10 @@ def retrieve_from_db(query_text: str, db, selected_model, k=5):
     
     retriever = db.as_retriever(search_kwargs={"k": k})
     docs = retriever.invoke(query_text)
-    doc_txt = docs[1].page_content
+    if docs:
+        doc_txt = docs[1].page_content
+    else:
+        return None
 
     doc_grader_prompt_formatted_str = doc_grader_prompt_formatted(doc_txt, query_text)
 
@@ -36,6 +40,11 @@ def format_response(response_text: str, sources: list):
     return f"{response_text}\n\nSources: {sources}"
 
 def query_rag(query_text: str, db, selected_model):
+
+    # Check the input 
+    if query_text.strip() == '' or len(query_text.strip()) == 0:
+        results = "please ask me anything..."
+        return results
 
     # Step 1: Retrieve relevant documents - check grade meet our requirement
     results = retrieve_from_db(query_text, db, selected_model)

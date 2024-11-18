@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, OpenAIError, timeout
 from langchain_community.llms.ollama import Ollama
 from langchain_core.messages import HumanMessage, SystemMessage
 import json
@@ -47,16 +47,24 @@ def ollama_router(selected_model, human_content):
     return result
 
 
-def gpt_router(selected_model, human_content):
-    response = client.chat.completions.create(
+def gpt_router(selected_model, human_content,timeout_seconds=5):
+    try:
+        response = client.chat.completions.create(
             model=selected_model,
             messages=[
                 {"role": "system", "content": DOC_GRADER_INSTRUCTIONS},
                 {"role": "user", "content": human_content}
             ],
             max_tokens=1000,  # Adjust max_tokens as needed
+            timeout=timeout_seconds
         )
-    print(f"routering....{selected_model}")
-    result =  json.loads(response.choices[0].message.content.strip())
-    print(result)
-    return result
+        print(f"routering....{selected_model}")
+        result =  json.loads(response.choices[0].message.content.strip())
+        print(result)
+        return result
+    except timeout.Timeout as e:
+        return f"Request timed out after {timeout_seconds} seconds. Please try again."
+    except OpenAIError as e:
+        return f"An OpenAI error occurred: {str(e)}"
+    except Exception as e:
+        return f"An unexpected error occurred: {str(e)}"
