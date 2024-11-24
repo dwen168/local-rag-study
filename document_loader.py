@@ -9,6 +9,7 @@ from langchain_core.documents import Document
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from initialiseapp import get_chroma_instance
 import shutil
 
 #TEXT_SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
@@ -28,9 +29,7 @@ def load_documents_into_database(model_name: str, documents_path: str) -> Chroma
 
     print("Creating embeddings and loading documents into Chroma")
     #clear_database()
-    db = Chroma(
-            persist_directory=CHROMA_PATH, embedding_function=get_embedding_function()
-        )
+    db = get_chroma_instance()
 
     print("Loading documents")
     #read raw doc file path
@@ -120,14 +119,6 @@ def load_documents(path: str) -> List[Document]:
         print(f"Loading {file_type} files")
         docs.extend(loader.load())
     return docs
-
-
-def get_embedding_function():
-    #embeddings = BedrockEmbeddings(
-        #credentials_profile_name="default", region_name="us-east-1"
-    #)
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
-    return embeddings
 
 
 def split_documents(documents: list[Document]):

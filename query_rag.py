@@ -11,10 +11,13 @@ load_dotenv()
 api_key=os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
-def retrieve_from_db(query_text: str, db, selected_model, k=5):
+def retrieve_from_db(query_text: str, db, selected_model, k=10):
     
     retriever = db.as_retriever(search_kwargs={"k": k})
-    docs = retriever.invoke(query_text)
+    try:
+        docs = retriever.invoke(query_text)
+    except Exception as e:
+        print(f"Error during retrieval: {e}")
     if docs:
         doc_txt = docs[1].page_content
     else:
@@ -26,8 +29,10 @@ def retrieve_from_db(query_text: str, db, selected_model, k=5):
         result = ollama_router(selected_model, doc_grader_prompt_formatted_str)
     else:
         result = gpt_router(selected_model, doc_grader_prompt_formatted_str)
-
-    if result["datasource"] == "chromadb":
+    
+    if 'error' in str(result).lower() and 'incorrect api key provided:' in str(result).lower():
+        return result
+    elif result["datasource"] == "chromadb":
         #Retrieves the most similar documents from the Chroma DB
         vectordbresults = db.similarity_search_with_score(query_text, k=5)
         return vectordbresults
@@ -49,6 +54,8 @@ def query_rag(query_text: str, db, selected_model):
     # Step 1: Retrieve relevant documents - check grade meet our requirement
     results = retrieve_from_db(query_text, db, selected_model)
     
+    if 'error' in str(results).lower() and 'incorrect api key provided:' in str(results).lower():
+        return results
     if results:
         # Step 3: Prepare the context from the retrieved documents
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])

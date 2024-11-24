@@ -7,6 +7,7 @@ from document_loader import load_documents_into_database
 from models import get_list_of_models
 from query_rag import query_rag
 from markmapcomponent import create_markmap_html, get_binary_file_downloader_html, escape_markdown_for_js
+from initialiseapp import get_chroma_instance
 
 
 EMBEDDING_MODEL = "nomic-embed-text"
@@ -15,8 +16,12 @@ UPLOAD_DIR = "uploaded_files"
 
 st.title("Build your own RAG 📚")
 
+
 if "list_of_models" not in st.session_state:
     st.session_state["list_of_models"] = get_list_of_models()
+
+if "db" not in st.session_state:
+    st.session_state["db"] = get_chroma_instance()
 
 selected_model = st.sidebar.selectbox(
     "Select a LLM model:", st.session_state["list_of_models"]
@@ -60,15 +65,10 @@ if UPLOAD_DIR:
     else:
         st.sidebar.text(f"The embedding model is : \n{EMBEDDING_MODEL}")
         if st.sidebar.button("Load and Index Documents"):
-            if "db" not in st.session_state:
-                with st.spinner(
+            with st.spinner(
                     "Creating embeddings and loading documents into Chroma..."
                 ):
                     st.session_state["db"] = load_documents_into_database(EMBEDDING_MODEL, UPLOAD_DIR)
-                st.info("All set to answer questions!")
-            else:
-                st.info("Connecting to Chroma....")
-                st.session_state["db"] = load_documents_into_database(EMBEDDING_MODEL, UPLOAD_DIR)
             st.info("All set to answer questions!")
 else:
     st.warning("Please enter a folder path to load documents into the database.")

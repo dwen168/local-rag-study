@@ -24,7 +24,7 @@ DOC_GRADER_PROMPT = """Here is the retrieved document: \n\n {document} \n\n Here
 
     Use the chromadb for questions on these topics. For all else, and especially for current events, use othersource.
 
-    Return JSON with single key, datasource, that is 'chromadb' or 'othersource' depending on the question.
+    You can only return JSON formatted response with single key, datasource, that is 'chromadb' or 'othersource' depending on the question.
 
     Format the JSON in a single row."""
 
@@ -47,7 +47,7 @@ def ollama_router(selected_model, human_content):
     return result
 
 
-def gpt_router(selected_model, human_content,timeout_seconds=5):
+def gpt_router(selected_model, human_content,timeout_seconds=15):
     try:
         response = client.chat.completions.create(
             model=selected_model,
@@ -62,8 +62,6 @@ def gpt_router(selected_model, human_content,timeout_seconds=5):
         result =  json.loads(response.choices[0].message.content.strip())
         print(result)
         return result
-    except timeout.Timeout as e:
-        return f"Request timed out after {timeout_seconds} seconds. Please try again."
     except OpenAIError as e:
         return f"An OpenAI error occurred: {str(e)}"
     except Exception as e:
