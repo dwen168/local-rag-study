@@ -1,12 +1,25 @@
 import streamlit as st
-from pymongo import MongoClient, errors
-from datetime import datetime
 from initialiseapp import get_chroma_instance, get_mongodb_instance
+from query_rag import query_rag
+from langchain_community.llms import Ollama
+from models import get_list_of_models
 
 
 def ui_chat_history():
     st.title("Chatbot: Load and Display Chat History")
 
+    if "list_of_models" not in st.session_state:
+        st.session_state["list_of_models"] = get_list_of_models()
+    
+    selected_model = st.sidebar.selectbox(
+        "Select a LLM model:", st.session_state["list_of_models"]
+    )
+
+    if st.session_state.get("selected_model") != selected_model:
+        st.session_state["selected_model"] = selected_model
+        st.session_state["llm"] = Ollama(model=selected_model)
+    
+    
     # Initialize session history
     if "chat_history" not in st.session_state:
         st.session_state["chat_history"] = []
@@ -45,20 +58,19 @@ def ui_chat_history():
             else:
                 st.text(f"assistant: {message['content']}")
         
-        # User input for continuing the chat
-        #user_input = st.text_input("You:", "")
-        if st.button("re-start from here"):
-            st.session_state.selected_chat = st.session_state["current_session"]
-            st.session_state.ui_mode = "default"
-            print("hello kitty")
-            #if user_input:
-                # Add user input to session history
-                #st.session_state["current_session"].append({"role": "user", "content": user_input})
-
-                # Generate bot response (dummy response here)
-                #bot_response = f"Echo: {user_input}"
-                #st.session_state["current_session"].append({"role": "bot", "content": bot_response})
-
+        st.session_state.selected_chat = st.session_state["current_session"]
+        if prompt := st.chat_input("Question"):
+            st.session_state.current_session.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            with st.chat_message("assistant"):
+                response = query_rag(
+                                    prompt,
+                                    get_chroma_instance(),
+                                    st.session_state["selected_model"],
+                ) 
+                st.session_state.current_session.append({"role": "assistant", "content": response})
+                st.write(response)
 
 
 ui_chat_history()

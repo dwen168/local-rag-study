@@ -41,8 +41,7 @@ def ui_chatspace():
         with st.chat_message("assistant"):
             response = query_rag(
                 prompt,
-                st.session_state["db"],
-                #get_chroma_instance(),
+                get_chroma_instance(),
                 st.session_state["selected_model"],
             ) 
             if "mind_map_mark" in response.lower():
