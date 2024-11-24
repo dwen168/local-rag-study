@@ -37,7 +37,7 @@ def ui_upload_file():
 
             st.success(f"Saved file: {uploaded_file.name} to {UPLOAD_DIR}")
 
-    if st.button("Load and Index Documents"):
+    if st.button("Save and Index Documents", icon="💾"):
         with st.spinner("building your knowledge database...."):
             st.session_state["db"] = load_documents_into_database(EMBEDDING_MODEL, UPLOAD_DIR)
         st.info("All set to answer questions!")

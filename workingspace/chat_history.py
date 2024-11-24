@@ -58,19 +58,10 @@ def ui_chat_history():
             else:
                 st.text(f"assistant: {message['content']}")
         
-        st.session_state.selected_chat = st.session_state["current_session"]
-        if prompt := st.chat_input("Question"):
-            st.session_state.current_session.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
-            with st.chat_message("assistant"):
-                response = query_rag(
-                                    prompt,
-                                    get_chroma_instance(),
-                                    st.session_state["selected_model"],
-                ) 
-                st.session_state.current_session.append({"role": "assistant", "content": response})
-                st.write(response)
-
+        #st.session_state.selected_chat = st.session_state["current_session"]
+        if st.button("Re-open this talk?", icon="✈️"):
+            st.session_state["messages"] = st.session_state["current_session"]
+            st.session_state["historyheader"] = f"Continuing Chat - {st.session_state['timestamp']}"
+            st.page_link("workingspace/chat_space.py", label="Click Me to re-open this talk", icon="😃")
 
 ui_chat_history()

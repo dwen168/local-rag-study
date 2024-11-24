@@ -13,9 +13,6 @@ def ui_chatspace():
     if "list_of_models" not in st.session_state:
         st.session_state["list_of_models"] = get_list_of_models()
     
-    if "db" not in st.session_state:
-        st.session_state["db"] = get_chroma_instance()
-    
     selected_model = st.sidebar.selectbox(
         "Select a LLM model:", st.session_state["list_of_models"]
     )
@@ -29,10 +26,14 @@ def ui_chatspace():
         st.session_state.messages = []
     
     # Display chat history
+    if 'historyheader' not in st.session_state:
+        st.session_state["historyheader"] = 'Start a new conversion here....'
+    else:
+        st.subheader (st.session_state["historyheader"])
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-    
+
     
     if prompt := st.chat_input("Question"):
         st.session_state.messages.append({"role": "user", "content": prompt})
@@ -65,7 +66,12 @@ def ui_chatspace():
                 # Add button to open in new tab
                 st.markdown(get_binary_file_downloader_html(html_content), unsafe_allow_html=True)
 
-    if st.button("Save"):
+    if st.sidebar.button("Open a new talk",icon="😃",use_container_width=True):
+        st.session_state["messages"] = []
+        st.session_state["historyheader"] = 'Start a new conversion here....'
+        st.rerun()
+
+    if st.sidebar.button("Save my conversion", icon=":material/save:",use_container_width=True):
         if st.session_state["messages"]:
             # Prepare the chat history document for saving
             chat_entry = {
@@ -80,6 +86,9 @@ def ui_chatspace():
                 st.success("Chat history saved successfully!")
             else:
                 st.error("Could not connect to chat history database. Your chat history won't be saved!")
+        else:
+            st.write ("you have not asked me anything yet! Ask me something first....")
+
 
 
 ui_chatspace()
