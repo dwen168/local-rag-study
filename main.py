@@ -1,6 +1,6 @@
 import streamlit as st
 import time
-import bcrypt
+import hashlib
 import yaml
 import os
 
@@ -15,6 +15,9 @@ if 'user_state' not in st.session_state:
         'logged_in': False
     }
 
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
 # Load users from the YAML file
 def load_users():
     file_path = 'config/user.yaml'
@@ -22,7 +25,7 @@ def load_users():
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, 'r') as file:
             users = yaml.safe_load(file)
-            return users if users else {}
+            return {user: hash_password(password) for user, password in users.items()}
     except FileNotFoundError:
         print("can't connect to authorisation service, please try later")
         return {}
@@ -40,8 +43,9 @@ def login():
         # Check if user is logged in
         if submit and st.session_state.user_state['logged_in'] == False:
             if user_id in users:
-                stored_password = users[user_id]
-                if password == stored_password:
+                hashed_stored_password = users[user_id]
+                hashed_password = hash_password(password)
+                if hashed_password == hashed_stored_password:
                     st.session_state.user_state['user_id'] = user_id
                     st.session_state.user_state['password'] = password
                     st.session_state.user_state['logged_in'] = True
