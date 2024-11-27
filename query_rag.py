@@ -11,18 +11,26 @@ load_dotenv()
 api_key=os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
-def retrieve_from_db(query_text: str, db, selected_model, k=10):
+def retrieve_from_db(query_text: str, db, selected_model, user_id, k=5):
     
-    retriever = db.as_retriever(search_kwargs={"k": k})
+    retriever = db.as_retriever(
+        search_kwargs={
+            "k": k,
+            "filter": {"user_id": user_id} 
+        }
+    )
     try:
         docs = retriever.invoke(query_text)
+        if docs:
+            doc_txt = docs[1].page_content
+        else:
+            print("No documents found for the query.")
+            return None
     except Exception as e:
         print(f"Error during retrieval: {e}")
-    if docs:
-        doc_txt = docs[1].page_content
-    else:
         return None
 
+    print(doc_txt)
     doc_grader_prompt_formatted_str = doc_grader_prompt_formatted(doc_txt, query_text)
 
     if selected_model != "gpt-4o-mini":
@@ -34,7 +42,11 @@ def retrieve_from_db(query_text: str, db, selected_model, k=10):
         return result
     elif result["datasource"] == "chromadb":
         #Retrieves the most similar documents from the Chroma DB
-        vectordbresults = db.similarity_search_with_score(query_text, k=5)
+        vectordbresults = db.similarity_search_with_score(
+            query_text,
+            k=k,
+            filter={"user_id": user_id},
+        )
         return vectordbresults
     return None
     
@@ -44,7 +56,7 @@ def format_response(response_text: str, sources: list):
     """Formats the final response with the answer and the sources."""
     return f"{response_text}\n\nSources: {sources}"
 
-def query_rag(query_text: str, db, selected_model):
+def query_rag(query_text: str, db, selected_model, user_id):
 
     # Check the input 
     if query_text.strip() == '' or len(query_text.strip()) == 0:
@@ -52,7 +64,7 @@ def query_rag(query_text: str, db, selected_model):
         return results
 
     # Step 1: Retrieve relevant documents - check grade meet our requirement
-    results = retrieve_from_db(query_text, db, selected_model)
+    results = retrieve_from_db(query_text, db, selected_model, user_id)
     
     if 'error' in str(results).lower() and 'incorrect api key provided:' in str(results).lower():
         return results

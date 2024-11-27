@@ -44,6 +44,7 @@ def ui_chatspace():
                 prompt,
                 get_chroma_instance(),
                 st.session_state["selected_model"],
+                st.session_state.user_state['user_id'],
             ) 
             if "mind_map_mark" in response.lower():
                 stream = response[response.find("mind_map_mark") + len("mind_map_mark"):].strip()
@@ -76,6 +77,7 @@ def ui_chatspace():
             # Prepare the chat history document for saving
             chat_entry = {
                 "timestamp": datetime.now(),
+                "user_id": st.session_state.user_state['user_id'],
                 "chat_history": st.session_state["messages"],
             }
             # Save to MongoDB

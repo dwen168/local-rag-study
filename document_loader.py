@@ -18,7 +18,7 @@ WORKING_PATH = "uploaded_files"
 ARCHIVE_PATH = "archive"
 
 
-def load_documents_into_database(model_name: str, documents_path: str) -> Chroma:
+def load_documents_into_database(documents_path: str, user_id) -> Chroma:
     """
     Loads documents from the specified directory into the Chroma database
     after splitting the text into chunks.
@@ -39,7 +39,7 @@ def load_documents_into_database(model_name: str, documents_path: str) -> Chroma
     chunks = split_documents(raw_documents)
 
     # Calculate Page IDs.
-    chunks_with_ids = calculate_chunk_ids(chunks)
+    chunks_with_ids = calculate_chunk_ids(chunks, user_id)
 
     # Add or Update the documents.
     existing_items = db.get(include=[])  # IDs are always included by default
@@ -53,12 +53,12 @@ def load_documents_into_database(model_name: str, documents_path: str) -> Chroma
             new_chunks.append(chunk)
 
     if len(new_chunks):
-        print(f"👉 Adding new documents: {len(new_chunks)}")
+        print(f"👉 Adding new documents for {user_id}: {len(new_chunks)}")
         new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
         db.add_documents(new_chunks, ids=new_chunk_ids)
         #db.persist()
     else:
-        print("✅ No new documents to add")
+        print("✅ No new documents to add for {user_id}.")
 
     archive_files(WORKING_PATH, ARCHIVE_PATH)
 
@@ -131,9 +131,9 @@ def split_documents(documents: list[Document]):
     return text_splitter.split_documents(documents)
 
 
-def calculate_chunk_ids(chunks):
+def calculate_chunk_ids(chunks, user_id):
 
-    # This will create IDs like "data/doc_name.pdf:7:2"
+    # This will create IDs like "user_id:data/doc_name.pdf:7:2"
     # Page Source : Page Number : Chunk Index
 
     last_page_id = None
@@ -151,11 +151,12 @@ def calculate_chunk_ids(chunks):
             current_chunk_index = 0
 
         # Calculate the chunk ID.
-        chunk_id = f"{current_page_id}:{current_chunk_index}"
+        chunk_id = f"{user_id}:{current_page_id}:{current_chunk_index}"
         last_page_id = current_page_id
 
         # Add it to the page meta-data.
         chunk.metadata["id"] = chunk_id
+        chunk.metadata["user_id"] = user_id
 
     return chunks
 
