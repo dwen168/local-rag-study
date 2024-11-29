@@ -73,7 +73,7 @@ chatspace = st.Page(
 )
 
 uploadfile = st.Page(
-    "workingspace/document_upload.py", title="Document Upload", icon=":material/upload_file:", default=False
+    "workingspace/document_upload.py", title="Manage Knowledge", icon=":material/upload_file:", default=False
 )
 
 historychat = st.Page(

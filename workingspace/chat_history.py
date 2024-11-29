@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 def ui_chat_history():
-    st.title("Chatbot: Load and Display Chat History")
+    st.markdown(f"<h3 style='font-size:36px;'> Feel free to dive into your chat history—it's like a treasure trove of past conversations, and hey, the chat's still open for more! Keep the banter going! </h3>", unsafe_allow_html=True)
 
     user_id = st.session_state.user_state['user_id']
     

@@ -12,9 +12,13 @@ def get_embedding_function():
     return embeddings
 
 def get_chroma_instance():
-    chromadb = Chroma(
-            persist_directory=CHROMA_PATH, embedding_function=get_embedding_function()
-        )
+    try:
+        chromadb = Chroma(
+                persist_directory=CHROMA_PATH, embedding_function=get_embedding_function()
+            )
+    except Exception as e:
+        print(f"An error occurred while initializing Chroma DB: {e}")
+        return None
     return chromadb
 
 
@@ -32,7 +36,6 @@ def get_mongodb_instance():
         # Ensure collection exists
         if collection_name not in mongodb.list_collection_names():
             mongodb.create_collection(collection_name)
-            print(f"Collection '{collection_name}' created.")
     except errors.ServerSelectionTimeoutError:
         return None
 
