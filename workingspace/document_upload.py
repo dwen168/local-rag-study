@@ -29,6 +29,10 @@ def ui_upload_file():
             st.error(
                 "The provided path is not a valid directory. Please enter a valid folder path."
             )
+        
+        # Set file size limit in MB
+        MAX_FILE_SIZE_MB = 10
+        MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
         # File uploader to allow multiple files
         uploaded_files = st.file_uploader("Choose files", type=None, accept_multiple_files=True)
@@ -41,6 +45,11 @@ def ui_upload_file():
                 st.write(f"**File size:** {uploaded_file.size / 1024:.2f} KB")
                 st.write(f"**File type:** {uploaded_file.type}")
 
+                # Check file size
+                if uploaded_file.size > MAX_FILE_SIZE_BYTES:
+                    st.error(f"File `{uploaded_file.name}` exceeds the size limit of {MAX_FILE_SIZE_MB} MB.")
+                    continue
+                
                 # Create the full file path
                 file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
 
