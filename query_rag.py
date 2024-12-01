@@ -30,7 +30,6 @@ def retrieve_from_db(query_text: str, db, selected_model, user_id, k=5):
         print(f"Error during retrieval: {e}")
         return None
 
-    print(doc_txt)
     doc_grader_prompt_formatted_str = doc_grader_prompt_formatted(doc_txt, query_text)
 
     if selected_model != "gpt-4o-mini":

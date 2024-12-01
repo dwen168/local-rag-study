@@ -28,8 +28,11 @@ def load_documents_into_database(documents_path: str, user_id) -> Chroma:
     """
 
     print("Creating embeddings and loading documents into Chroma")
-    #clear_database()
-    db = get_chroma_instance()
+    try:
+        db = get_chroma_instance()
+    except Exception as e:
+        print(f"An error occurred while initializing Chroma: {e}")
+        return None
 
     print("Loading documents")
     #read raw doc file path
@@ -58,7 +61,7 @@ def load_documents_into_database(documents_path: str, user_id) -> Chroma:
         db.add_documents(new_chunks, ids=new_chunk_ids)
         #db.persist()
     else:
-        print("✅ No new documents to add for {user_id}.")
+        print(f"✅ No new documents to add for {user_id}.")
 
     archive_files(WORKING_PATH, ARCHIVE_PATH)
 

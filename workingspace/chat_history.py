@@ -33,7 +33,7 @@ def ui_chat_history():
                         timestamp = chat_entry.get("timestamp", "Unknown Time").strftime("%Y-%m-%d %H:%M:%S")
                         first_user_message = next((msg["content"] for msg in chat_entry["chat_history"] if msg["role"] == "user"), "No user messages")
                         button_label = f"{timestamp} - {first_user_message[:50]}..."
-                        if st.button(button_label, key=f"session_{idx}"):
+                        if st.button(button_label, key=f"session_{idx}_{timestamp}"):
                             # Store selected session in session state
                             st.session_state["current_session"] = chat_entry["chat_history"]
                             st.session_state["timestamp"] = timestamp
