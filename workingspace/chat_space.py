@@ -22,6 +22,9 @@ def ui_chatspace():
         st.session_state["selected_model"] = selected_model
         st.session_state["llm"] = Ollama(model=selected_model)
 
+        
+    chat_mode = st.sidebar.radio("Choose chat mode(TBD...)", ["One Question - One Answer", "Chat Chain"])
+
     if 'mindmap_from_voc' not in st.session_state:
         st.session_state["mindmap_from_voc"] = '' 
     
@@ -44,7 +47,7 @@ def ui_chatspace():
         with st.chat_message("user"):
             st.markdown(prompt)
         with st.chat_message("assistant"):
-            response = get_rag_response(prompt)
+            response = get_rag_response(prompt, chat_mode)
             generate_mindmap(prompt,response)
 
     # sidebar menu
@@ -79,7 +82,7 @@ def ui_chatspace():
         if voice_question:
             st.session_state.messages.append({"role": "user", "content": voice_question})
             with st.chat_message("assistant"):
-                response = get_rag_response(voice_question)
+                response = get_rag_response(voice_question, chat_mode)
                 mindmap_from_voc = generate_mindmap(voice_question, response)
                 st.session_state["mindmap_from_voc"] = mindmap_from_voc
                 st.rerun()
@@ -92,13 +95,14 @@ def ui_chatspace():
         st.session_state["mindmap_from_voc"] = ''
 
 
-def get_rag_response(query):
+def get_rag_response(query, chat_mode):
     with st.spinner("I am thinking...."):
         response = query_rag(
                 query,
                 get_chroma_instance(),
                 st.session_state["selected_model"],
                 st.session_state.user_state['user_id'],
+                chat_mode,
         ) 
     if "mind_map_mark" in response.lower():
         stream = response[response.find("mind_map_mark") + len("mind_map_mark"):].strip()
@@ -137,11 +141,6 @@ def generate_mindmap(query, rag_response):
 def record_voice(language="en"):
     # https://github.com/B4PT0R/streamlit-mic-recorder?tab=readme-ov-file#example
 
-    state = st.session_state
-
-    if "text_received" not in state:
-        state.text_received = []
-
     with st.spinner("Taking your voice..."):
         text = speech_to_text(
             start_prompt="🎙️ Click and speak to ask question",
@@ -151,16 +150,7 @@ def record_voice(language="en"):
             just_once=True,
         )
 
-    if text:
-        state.text_received.append(text)
-
-    result = ""
-    for text in state.text_received:
-        result += text
-
-    state.text_received = []
-
-    return result if result else None
+    return text if text else None
 
 
 ui_chatspace()

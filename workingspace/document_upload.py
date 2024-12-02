@@ -89,6 +89,7 @@ def fetch_chromadb_records(user_id):
                                 ) 
         existing_ids = set(existing_items["ids"])
         doc_names = []
+        print(existing_ids)
         for id in existing_ids:
             if id.startswith(f"{user_id}:uploaded_files/"):
                 # Extract the file name using regex
