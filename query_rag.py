@@ -5,6 +5,7 @@ from query_router import ollama_router, gpt_router, doc_grader_prompt_formatted
 from query_ollama import query_ollama_model
 from query_gpt import query_gpt_model
 from create_prompts import create_prompt
+from query_conversationalretrievalchain import conversationalretrieval
 
 
 load_dotenv()
@@ -55,7 +56,7 @@ def format_response(response_text: str, sources: list):
     """Formats the final response with the answer and the sources."""
     return f"{response_text}\n\nSources: {sources}"
 
-def query_rag(query_text: str, db, selected_model, user_id, chat_mode):
+def query_rag(query_text: str, db, selected_model, user_id, chat_mode, chat_memory):
 
     # Check the input 
     if query_text.strip() == '' or len(query_text.strip()) == 0:
@@ -65,6 +66,8 @@ def query_rag(query_text: str, db, selected_model, user_id, chat_mode):
     if chat_mode == 'Chat Chain':
         print("do some thing")
         print(chat_mode)
+        x = conversationalretrieval(query_text,chat_memory, selected_model)
+        return x
 
     # Step 1: Retrieve relevant documents - check grade meet our requirement
     results = retrieve_from_db(query_text, db, selected_model, user_id)

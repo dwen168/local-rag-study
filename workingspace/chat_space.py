@@ -7,6 +7,7 @@ from langchain_community.llms import Ollama
 from models import get_list_of_models
 from datetime import datetime
 from streamlit_mic_recorder import speech_to_text
+import os
 
 def ui_chatspace():
     st.title("📚 Ask Me Anything!")
@@ -103,6 +104,7 @@ def get_rag_response(query, chat_mode):
                 st.session_state["selected_model"],
                 st.session_state.user_state['user_id'],
                 chat_mode,
+                chat_memory(),
         ) 
     if "mind_map_mark" in response.lower():
         stream = response[response.find("mind_map_mark") + len("mind_map_mark"):].strip()
@@ -134,8 +136,19 @@ def generate_mindmap(query, rag_response):
         st.markdown(get_binary_file_downloader_html(html_content), unsafe_allow_html=True) 
 
     return str_mindmap
-    
 
+def chat_memory():
+    chat_memory = []
+    for message in st.session_state.messages:
+        if message['role'] == 'user':
+            #chat_memory += f"human: {message['content']}" + "\n"
+            chat_memory.append(f"human: {message['content']}")
+        elif message['role'] == 'assistant':
+            content = message['content']
+            trimmed_content = content.split("Sources: ")[0].strip()
+            #chat_memory += f"ai: {trimmed_content}" + "\n"
+            chat_memory.append(f"ai: {message['content']}")
+    return chat_memory
 
 
 def record_voice(language="en"):
