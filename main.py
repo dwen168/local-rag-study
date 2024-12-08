@@ -4,6 +4,8 @@ import hashlib
 import yaml
 import os
 
+st.set_page_config(page_title="Welcome to my RAG!", layout="wide")
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
@@ -80,11 +82,15 @@ historychat = st.Page(
     "workingspace/chat_history.py", title="Chat History", icon=":material/history:", default=False
 )
 
+visionchat = st.Page(
+    "workingspace/vision_chat.py", title="Vision Chat", icon=":material/image_search:", default=False
+)
+
 if st.session_state.logged_in:
     pg = st.navigation(
             {
                 "Account": [logout_page],
-                "My Workspace": [chatspace, uploadfile, historychat],
+                "My Workspace": [chatspace, uploadfile, historychat,visionchat],
             }
         )
 else:
